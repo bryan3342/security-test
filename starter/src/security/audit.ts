@@ -1,4 +1,5 @@
 import { Storage } from "@google-cloud/storage";
+import { randomUUID } from "node:crypto";
 import type { AuditEvent } from "../types.js";
 
 export type AuditLogger = {
@@ -21,13 +22,21 @@ function createGcsAuditLogger(): AuditLogger {
 
   return {
     async log(event) {
-      const objectName = `audit-${event.action}-${event.targetId}.json`;
-      await storage
-        .bucket(bucketName)
-        .file(objectName)
-        .save(JSON.stringify(event), { contentType: "application/json" });
-    },
-  };
+      const objectName = `audit/${event.action}/${event.targetId}/${Date.now()}-${randomUUID()}.json`;
+      try {
+           await storage
+             .bucket(bucketName)
+             .file(objectName)
+             .save(JSON.stringify(event), { contentType: "application/json" });
+      } catch (err) {
+         console.error(
+             "AUDIT_WRITE_FAILED",
+             JSON.stringify({ objectName, action: event.action, targetId: event.targetId, error: String(err) })
+           );
+    }
+  }
+}
+
 }
 
 export function createAuditLogger(): AuditLogger {

@@ -1,4 +1,6 @@
 import { createClient, type RedisClientType } from "redis";
+// Importing Node.js built in crypto module
+import { randomBytes } from "node:crypto";
 import type { HealthRecord } from "../types.js";
 
 export type ShareRecord = {
@@ -10,6 +12,8 @@ export type ShareRecord = {
 
 export type ShareTokenStore = {
   saveShare: (share: ShareRecord) => Promise<void>;
+  
+  redeemShare: (token: string) => Promise<ShareRecord | null>;
 };
 
 export class InMemoryShareTokenStore implements ShareTokenStore {
@@ -17,6 +21,15 @@ export class InMemoryShareTokenStore implements ShareTokenStore {
 
   async saveShare(share: ShareRecord): Promise<void> {
     this.shares.push(share);
+  }
+
+  async redeemShare(token: string): Promise<ShareRecord | null> {
+    const idx = this.shares.findIndex((s) => s.token === token);
+    if (idx === -1) return null;
+    const [share] = this.shares.splice(idx, 1);
+    return share ?? null;
+
+
   }
 }
 
@@ -39,7 +52,21 @@ export class RedisShareTokenStore implements ShareTokenStore {
 
   async saveShare(share: ShareRecord): Promise<void> {
     await this.ensureConnected();
-    await this.client.set(`share:${share.token}`, JSON.stringify(share));
+    await this.client.set(
+      `share:${share.token}`, 
+      JSON.stringify(share),
+      { EX: 86400 }
+    );
+  }
+
+  async redeemShare(token: string): Promise<ShareRecord | null> {
+    await this.ensureConnected();
+    const key = `share:${token}`;
+    const raw = await this.client.get(key);
+    if (!raw) return null;
+
+    await this.client.del(key);
+    return JSON.parse(raw) as ShareRecord;
   }
 }
 
@@ -70,7 +97,7 @@ export class InMemoryRecordRepository {
   }
 
   async createShare(recordId: string, createdBy: string): Promise<ShareRecord> {
-    const token = `${recordId}-${Math.random().toString(36).slice(2, 8)}`;
+    const token = randomBytes(32).toString("hex");
     const share: ShareRecord = {
       token,
       recordId,
