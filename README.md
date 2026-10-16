@@ -1,92 +1,55 @@
 # Security Interview Mini-Challenge
 
-This folder contains a small security exercise modeled after a modern backend architecture (route layer, manager layer, storage abstraction, markdown prompt templates, audit logging, Redis-backed share storage, and Google Cloud Storage audit export).
+## Description
 
-It is intentionally generic and does not contain product-specific details.
+A security-review exercise for a small Fastify and TypeScript service handling sensitive healthcare-related records. The repository includes the starter service plus threat-model, compliance, exploit-demo, testing, and implementation-decision documents.
 
-## Candidate Prompt
+## Dependencies
 
-You are reviewing a small service that handles sensitive healthcare-related records.
-It can persist share tokens in **Redis** and write audit events to **Google Cloud Storage (GCS)**.
+- Node.js compatible with the checked-in TypeScript toolchain and npm.
+- Docker Compose for the local Redis option.
+- Redis when `USE_REDIS_FOR_SHARES=true`.
+- Google Cloud credentials and a configured GCS bucket when `USE_GCS_AUDIT_LOGGING=true`.
 
-Timebox: **60-90 minutes**.
+## Technologies
 
-### Your tasks
+TypeScript, Node.js, Fastify, Redis, Google Cloud Storage, Docker Compose, tsx, and the TypeScript compiler.
 
-1. Find the highest-risk security issues in the starter code.
-2. Implement fixes for at least **3** issues (focus on practical, high-impact changes), including at least one issue in:
-   - Redis usage
-   - GCS usage
-3. Add a short `THREAT_MODEL.md` with:
-   - top risks
-   - attack paths
-   - residual risk after your fixes
-4. Add a short `COMPLIANCE_NOTES.md` mapping your fixes to:
-   - **SOC 2 Type II** expectations
-   - **HIPAA** safeguards (technical + administrative where relevant)
-5. Add `EXPLOIT_DEMO.md` with:
-   - how to reproduce each issue before your fix
-   - how you validated the fix (exact commands and expected outcomes)
-6. Add `DECISIONS.md` with:
-   - 5 implementation decisions you made and why
-   - 1 alternative you rejected and why
-
-### Deliverables
-
-- Code changes in `starter/`
-- `THREAT_MODEL.md`
-- `COMPLIANCE_NOTES.md`
-- `EXPLOIT_DEMO.md`
-- `DECISIONS.md`
-
-### Constraints
-
-- Keep changes small and production-pragmatic.
-- Do not redesign the whole app.
-- Prefer clear controls over perfect completeness.
-- Assume Redis and GCS are available in production; local fallback paths may still exist in the starter code.
-
-### Definition Of Done (Pass/Fail)
-
-Your submission is only complete if all items below are true:
-
-1. You fixed at least 3 real vulnerabilities, including one Redis issue and one GCS issue.
-2. Redis share token handling includes all of:
-   - cryptographically strong token generation
-   - TTL/expiration
-   - a revocation or one-time-use strategy
-   - no unnecessary PHI in Redis values
-3. GCS audit handling includes all of:
-   - non-overwritable object strategy (or an explicit compensating control)
-   - behavior for audit write failure
-   - documented bucket security assumptions (IAM, retention/versioning, encryption)
-4. Record access/share creation has authorization checks that prevent IDOR/BOLA.
-5. Logs/audit payloads no longer expose raw sensitive record content unnecessarily.
-6. `EXPLOIT_DEMO.md` includes exact commands and before/after behavior.
-
-### AI Usage Policy
-
-AI tools are allowed. However, submission quality is judged on your understanding:
-
-1. You must be able to explain and defend every code change in a live walkthrough.
-2. You must explain at least one tradeoff you intentionally accepted.
-3. If you cannot explain your own fixes, the submission is treated as incomplete.
-
-## Starter App
-
-Path: `security-test/starter`
-
-Optional run steps:
+## Setup
 
 ```bash
+git clone https://github.com/bryan3342/security-test.git
 cd security-test/starter
+cp .env.example .env
+docker compose up -d redis
 npm install
 npm run dev
 ```
 
-Test headers for local requests:
+By default, shares use memory and audits use console output. Enable Redis or GCS through the documented environment variables only after configuring those services. The sample request identity comes from `x-user-id` and `x-role` headers and is intended for this exercise, not production authentication.
 
-- `x-user-id: user-1`
-- `x-role: member` (or `admin`)
+## Features
 
-See `starter/README.md` for Redis/GCS environment flags and local Redis startup.
+- Record retrieval, record-sharing, and guidance endpoints.
+- Redis-backed share tokens with an in-memory fallback.
+- GCS audit export with a console fallback.
+- Role and record-access checks in the starter implementation.
+- A prompt template for guidance responses.
+- Written threat model, compliance mapping, exploit reproduction notes, decisions, and security testing notes.
+
+This is a time-boxed interview exercise and not a production healthcare service.
+
+## Commands to run
+
+```bash
+cd starter
+npm run dev
+npm run build
+```
+
+Example requests are in [starter/README.md](starter/README.md). The package defines no automated test command.
+
+## Contributors
+
+- [Bryan Mejia (@bryan3342)](https://github.com/bryan3342), credited in Git history.
+- Michael, credited in Git history.
